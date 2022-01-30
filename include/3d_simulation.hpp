@@ -27,11 +27,10 @@ class Simulation{
         Simulation(Camera *camera, std::string model_path, std::string pattern_path){
 
             /* Allocate memory for depth image */
-            int w = camera->width;
-	        int h = camera->height;
+            w = camera->width;
+	        h = camera->height;
         
             depth_im_ = cv::Mat(h, w, CV_32FC1);
-            // model_ = boost::shared_ptr<ObjectMeshModel>(new ObjectMeshModel(model_path));
             model_ = new ObjectMeshModel(model_path);
             search_ = new TreeAndTri;
             updateTree();
@@ -48,7 +47,12 @@ class Simulation{
         }
     void updateTree();
     void initFilter();
+    void projection(const Eigen::Affine3d &new_tf, bool store_depth);
+    void intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map);
+
     private:
+        int w, h;
+
         cv::Mat depth_im_;
         // boost::shared_ptr<ObjectMeshModel> model_;
         TreeAndTri* search_;
@@ -62,6 +66,8 @@ class Simulation{
         cv::Mat dot_pattern_; 
 
         Eigen::Affine3d transform_; 
+
+        static constexpr float invalid_disp_ = 99999999.9; 
 };
 #endif
 

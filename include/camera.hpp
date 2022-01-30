@@ -50,7 +50,7 @@ class CameraInfo{
 };
 
 class Camera : public CameraInfo{
-    private:
+    public:
         Camera(int w, int h, double z_n, double z_f, double fx, 
                         double fy, double cx, double cy, double tx){
             width =w;

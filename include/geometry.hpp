@@ -399,7 +399,7 @@ public:
     } 
 }; 
  
-typedef Matrix44<float> Matrix44f; 
+typedef Matrix44<double> Matrix44f; 
 typedef Vec2<float> Vec2f; 
 typedef Vec2<int> Vec2i;
 typedef Vec3<float> Vec3f; 
