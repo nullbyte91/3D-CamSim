@@ -50,7 +50,7 @@ class Simulation{
     void updateTree();
     void initFilter();
     void projection(const Eigen::Affine3d &new_tf, bool store_depth);
-    void intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map);
+    void intersect(const Eigen::Affine3d &p_transform, cv::Mat &depth_map, cv::Mat &out_disp);
 
     private:
         Camera *camera_;
@@ -70,6 +70,7 @@ class Simulation{
 
         Eigen::Affine3d transform_; 
 
+        
         static constexpr float invalid_disp_ = 99999999.9; 
 };
 #endif

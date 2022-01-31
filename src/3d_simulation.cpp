@@ -42,7 +42,7 @@ void Simulation::initFilter()
     }
 }
 
-void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map)
+void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map, cv::Mat &out_disp)
 {
     model_->updateTransformation(p_transform);
     updateTree();
@@ -152,7 +152,24 @@ void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_m
     } // camera_.getHeight()
     } // camera_.getWidth()
 
-    
+    for(int r=0; r<h; ++r) {
+        float* disp_i = out_disp.ptr<float>(r);
+        double* depth_map_i = depth_map.ptr<double>(r);
+        for(int c=0; c<w; ++c) {
+	        float disp = disp_i[c];
+	        if(disp<invalid_disp_){
+	            cv::Point3d new_p;
+	            new_p.z = (camera_->fx_ * camera_->tx_) / disp;
+	            if(new_p.z<camera_->z_near || new_p.z>camera_->z_far){
+	                continue;
+	            }
+                new_p.x = (new_p.z/ camera_->fx_) * (c - camera_->cx_);
+                new_p.y = (new_p.z/ camera_->fy_) * (r - camera_->cy_);
+                vec.push_back(new_p);
+                depth_map_i[(int)c] = new_p.z;
+	        }
+        }
+    }
 }   
 void Simulation::projection(const Eigen::Affine3d &new_tf, bool store_depth){
     /* Update new transform */
