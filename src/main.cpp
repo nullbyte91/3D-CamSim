@@ -21,8 +21,8 @@ void getRandomTransform(const double &p_x,
 
 int main(int argc, char **argv)
 {
-    int w = 1000;
-    int h = 1000;
+    int w = 640;
+    int h = 480;
     double cx = 320;
     double cy = 240;
     double fx = 580.0, fy = 580.0;

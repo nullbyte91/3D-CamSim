@@ -25,12 +25,14 @@ inline double sq(float x)
 class Simulation{
     public:
         Simulation(Camera *camera, std::string model_path, std::string pattern_path){
-
+            
+            out_path_ = "/home/nullbyte/Desktop/3D-CamSim/output/";
             /* Allocate memory for depth image */
             w = camera->width;
 	        h = camera->height;
         
             depth_im_ = cv::Mat(h, w, CV_32FC1);
+            scaled_im_ = cv::Mat(h, w, CV_32FC1);
             model_ = new ObjectMeshModel(model_path);
             search_ = new TreeAndTri;
             updateTree();
@@ -50,13 +52,13 @@ class Simulation{
     void updateTree();
     void initFilter();
     void projection(const Eigen::Affine3d &new_tf, bool store_depth);
-    void intersect(const Eigen::Affine3d &p_transform, cv::Mat &depth_map, cv::Mat &out_disp);
+    void intersect(const Eigen::Affine3d &p_transform, cv::Mat &depth_map);
 
     private:
         Camera *camera_;
         int w, h;
 
-        cv::Mat depth_im_;
+        cv::Mat depth_im_, scaled_im_;
         // boost::shared_ptr<ObjectMeshModel> model_;
         TreeAndTri* search_;
         // filter masks 
@@ -70,7 +72,9 @@ class Simulation{
 
         Eigen::Affine3d transform_; 
 
+        std::string out_path_;
         
+        int countf;
         static constexpr float invalid_disp_ = 99999999.9; 
 };
 #endif
