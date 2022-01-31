@@ -53,7 +53,107 @@ void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_m
     cv::Mat disp(h, w, CV_32FC1);
     disp.setTo(invalid_disp_);
 
-}
+    /* go through the whole image and create a ray from a pixel -> dir */    
+    std::vector<cv::Point3f> vec;
+    int n_occluded = 0;
+    vec.reserve(h * w);
+
+    for(int c=0; c<w; ++c) { 
+        for(int r=0; r<h; ++r) {
+	    /* compute ray from pixel and camera configuration */
+	    cv::Point3f ray = camera_->projectPixelTo3dRay(cv::Point2f(c,r));
+	    
+        /* check if there is any intersection of the ray with an object by do_intersect */
+	    uint32_t reach_mesh = search_->tree.do_intersect(Ray(Point(0,0,0), Vector(ray.x, ray.y, ray.z)));
+	    if (reach_mesh){
+	        /* if there is one or many intersections, order them according to distance to camera
+	           and continue computation with closest */
+	        std::list<Object_and_Primitive_id> intersections;
+	        search_->tree.all_intersections(Ray(Point(0,0,0),Vector( ray.x, ray.y, ray.z)), 
+					  std::back_inserter(intersections));
+	        if(!intersections.empty()) {
+	            std::list<Object_and_Primitive_id>::const_iterator it;
+	            Point min_p(0,0,0);
+	            double min_dist = std::numeric_limits<double>::infinity();
+	            double min_id = -1;
+	            for (it = intersections.begin(); it != intersections.end(); ++it) {
+	                CGAL::Object object = it->first;
+	                std::size_t triangle_id = std::distance(search_->triangles.begin(),it->second); 
+	                assert( search_->triangles[triangle_id] == *(it->second) ); 
+	                Point point;
+	                if(CGAL::assign(point,object)){
+		                double dist = abs(point);
+		                if(dist<min_dist){
+		                    /* distance to point */
+		                    min_dist = dist;
+		  
+                            /* intersection coordinates */
+		                    min_p = point;
+		                    /* label of the intersected object (will be zero for this simple case) */
+		                    min_id = triangle_id;
+		                }
+	                    } else {
+		                    std::cout << "Intersection object is NOT a point ?????" << std::endl;
+	                    }
+	            }
+
+	        /* check if point is also visible in second camera by casting a ray to this point */
+	        uint32_t reach_mesh_r = search_->tree.do_intersect(Ray(Point(camera_->tx_,0,0), 
+								   Point(min_p.x(), min_p.y(), min_p.z())));
+	        if(reach_mesh_r) {
+	            /* if there are intersections, get the closest to the camera */
+	            std::list<Object_and_Primitive_id> intersections_r;
+	            search_->tree.all_intersections(Ray(Point(camera_->tx_,0,0), Point(min_p.x(), min_p.y(), min_p.z())), 
+					      std::back_inserter(intersections_r));
+	            if(!intersections_r.empty()) {
+		            std::list<Object_and_Primitive_id>::const_iterator id;
+		            Point min_p_r(min_p.x(), min_p.y(), min_p.z());
+		            double min_dist_r = std::numeric_limits<double>::infinity();
+		            for (id = intersections_r.begin(); id != intersections_r.end(); ++id) {
+		                CGAL::Object object = id->first;
+		                Point point;
+		                if(CGAL::assign(point,object)){
+		                    double dist = abs(point);
+		                    if(dist<min_dist_r){
+		                        min_dist_r = dist;
+		                        min_p_r = point;
+		                    }
+		                }
+		            }
+		
+		            /* check if closest intersection is the same as from the left image
+		            if not, point is not visible in both images -> occlusion boundary */
+		            Point diff(min_p_r.x() - min_p.x(), min_p_r.y() - min_p.y(), min_p_r.z() - min_p.z());
+		            if(abs(diff)<0.0001) {
+                        // get pixel position of ray in right image
+                        float tx_fx = camera_->tx_;
+                        cv::Point3d point_right( min_p.x()-tx_fx, min_p.y(), min_p.z());
+                        cv::Point2f right_pixel = camera_->project3dToPixel(point_right);
+                        // quantize right_pixel
+                        right_pixel.x = round(right_pixel.x*8.0)/8.0;
+                        right_pixel.y = round(right_pixel.y*8.0)/8.0;
+                        // compute disparity image
+                        float quant_disp = c - right_pixel.x; 
+                        float* disp_i = disp.ptr<float>(r);
+                        disp_i[(int)c] = quant_disp;
+                        // fill label image with part id 
+                        // unsigned char* labels_i = labels.ptr<unsigned char>(r);
+                        // cv::Scalar color = color_map_[search_->part_ids[min_id]];
+                        // for(int col=0; col<3; ++col){
+                        //     labels_i[(int)c*3+col] = color(col);
+                        // }
+                    } else {
+                    n_occluded++;
+                    }
+	            } // if there are non-zero intersections from right camera
+	        } // if mesh reached from right camera
+	    } // if non-zero intersections
+	} // if mesh reached 
+    } // camera_.getHeight()
+    } // camera_.getWidth()
+
+    
+}   
 void Simulation::projection(const Eigen::Affine3d &new_tf, bool store_depth){
     /* Update new transform */
     transform_ = new_tf;

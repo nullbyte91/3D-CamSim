@@ -44,6 +44,8 @@ class Simulation{
 
             transform_ = Eigen::Affine3d::Identity();
 
+            camera_ = camera;
+
         }
     void updateTree();
     void initFilter();
@@ -51,6 +53,7 @@ class Simulation{
     void intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map);
 
     private:
+        Camera *camera_;
         int w, h;
 
         cv::Mat depth_im_;
