@@ -42,8 +42,9 @@ void Simulation::initFilter()
     }
 }
 
-void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map, cv::Mat &out_disp)
+void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_map)
 {
+    cv::Mat out_disp;
     model_->updateTransformation(p_transform);
     updateTree();
 
@@ -172,8 +173,23 @@ void Simulation::intersect(const Eigen::Affine3d &p_transform,  cv::Mat &depth_m
     }
 }   
 void Simulation::projection(const Eigen::Affine3d &new_tf, bool store_depth){
+
+    /* Frame count */
+    countf++;
+
     /* Update new transform */
     transform_ = new_tf;
 
+    intersect(transform_, depth_im_);
+
+    convertScaleAbs(depth_im_, scaled_im_, 255.0f);
+
+    std::stringstream lD;
+	lD << out_path_ << "depth_orig" << std::setw(3) << std::setfill('0')
+	<< countf << ".png";
+
+    // cv::imwrite(lD.str().c_str(), depth_im_);
+    cv::imshow("window", depth_im_);
+    cv::waitKey(0);
     
 }

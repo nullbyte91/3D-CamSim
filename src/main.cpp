@@ -30,7 +30,7 @@ int main(int argc, char **argv)
     double z_n =  0.5, z_f = 6.0;
     Camera *camera = new Camera(w, h, z_n, z_f, fx, fy, cx, cy, tx);
     
-    std::string model_path = "../model/cube.obj";
+    std::string model_path = "/home/nullbyte/Desktop/3D-CamSim/model/cube.obj";
     std::string pattern_path = "../data/kinect-pattern_3x3.png";
     Simulation * simulation = new Simulation(camera, model_path, pattern_path);
 
